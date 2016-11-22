@@ -561,7 +561,21 @@ class Pod(Resource):
 
         return 0
 
-    def _handle_pending_pods(self, namespace, labels):
+    def _handle_insufficient_resource(self, timeout):
+        """
+        If pulling an image is taking long (1 minute) then return how many seconds
+        the pod ready state timeout should be extended by
+
+        Return value is an int that represents seconds
+        """
+        # only apply once
+        if not getattr(self, '_handle_insufficient_resource_applied', False):
+            setattr(self, '_handle_insufficient_resource_applied', True)
+            return timeout
+
+        return 0
+
+    def _handle_pending_pods(self, namespace, labels, insufficient_resource_timeout):
         """
         Detects if any pod is in the starting phases and handles
         any potential issues around that, and increases timeouts
@@ -577,7 +591,16 @@ class Pod(Resource):
             # Get more information on why a pod is pending
             reason, message = self.pending_status(pod)
             # If pulling an image is taking long then increase the timeout
-            timeout += self._handle_long_image_pulling(pod, reason)
+            if reason == 'Pulling':
+                timeout += self._handle_long_image_pulling(pod, reason)
+            elif reason == 'Pending':
+                for event in self.events(pod):
+                    if event['reason'] == 'FailedScheduling' and \
+                        ('Insufficient cpu' in event['message'] or
+                            'Insufficient memory' in event['message']):
+                        timeout += self._handle_insufficient_resource(
+                            insufficient_resource_timeout)
+                        break
 
             # handle errors and bubble up if need be
             self._handle_pod_errors(pod, reason, message)
@@ -647,7 +670,7 @@ class Pod(Resource):
         waited = 0
         while waited < timeout:
             # figure out if there are any pending pod issues
-            additional_timeout = self._handle_pending_pods(namespace, labels)
+            additional_timeout = self._handle_pending_pods(namespace, labels, 0)
             if additional_timeout:
                 timeout += additional_timeout
                 # add 10 minutes to timeout to allow a pull image operation to finish
