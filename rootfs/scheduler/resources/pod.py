@@ -492,7 +492,7 @@ class Pod(Resource):
         events.sort(key=lambda x: x['lastTimestamp'])
         return events
 
-    def _handle_pod_errors(self, pod, reason, message):
+    def _handle_pod_errors(self, pod, reason, message, insufficient_resource_wait=False):
         """
         Handle potential pod errors based on the Pending
         reason passed into the function
@@ -528,14 +528,23 @@ class Pod(Resource):
         if reason in container_errors:
             for event in self.events(pod):
                 if event['reason'] in event_errors.keys():
-                    # only show a given error once
-                    event_errors.pop(event['reason'])
-                    # strip out whitespaces on either side
-                    message = "\n".join([x.strip() for x in event['message'].split("\n")])
-                    messages.append(message)
+                    # don't terminate on FailedScheduling Insufficient cpu,memory immediately
+                    # if insufficient_resource_wait is defined
+                    if not (self._is_insufficient_resource_event(event) and
+                            insufficient_resource_wait):
+                        # only show a given error once
+                        event_errors.pop(event['reason'])
+                        # strip out whitespaces on either side
+                        message = "\n".join([x.strip() for x in event['message'].split("\n")])
+                        messages.append(message)
 
         if messages:
             raise KubeException("\n".join(messages))
+
+    def _is_insufficient_resource_event(self, event):
+        return (event['reason'] == 'FailedScheduling' and
+                ('Insufficient cpu' in event['message'] or
+                 'Insufficient memory' in event['message']))
 
     def _handle_long_image_pulling(self, reason, pod):
         """
@@ -563,7 +572,7 @@ class Pod(Resource):
 
         return 0
 
-    def _handle_pending_pods(self, namespace, labels):
+    def _handle_pending_pods(self, namespace, labels, insufficient_resource_wait=False):
         """
         Detects if any pod is in the starting phases and handles
         any potential issues around that, and increases timeouts
@@ -581,10 +590,11 @@ class Pod(Resource):
             # Get more information on why a pod is pending
             reason, message = self.pending_status(pod)
             # If pulling an image is taking long then increase the timeout
-            timeout += self._handle_long_image_pulling(pod, reason)
+            if reason == 'Pulling':
+                timeout += self._handle_long_image_pulling(pod, reason)
 
             # handle errors and bubble up if need be
-            self._handle_pod_errors(pod, reason, message)
+            self._handle_pod_errors(pod, reason, message, insufficient_resource_wait)
 
         return timeout
 

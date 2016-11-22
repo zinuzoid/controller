@@ -1051,6 +1051,9 @@ class App(UuidAuditedModel):
         # see if the app config has deploy timeout preference, otherwise use global
         deploy_timeout = int(config.values.get('DEIS_DEPLOY_TIMEOUT', settings.DEIS_DEPLOY_TIMEOUT))  # noqa
 
+        # see if the app config has deploy insufficient resource timeout preference, otherwise use global # noqa
+        deploy_insufficient_resource_wait = int(config.values.get('DEIS_DEPLOY_INSUFFICIENT_RESOURCE_WAIT', settings.DEIS_DEPLOY_INSUFFICIENT_RESOURCE_WAIT))  # noqa
+
         # configures how many ReplicaSets to keep beside the latest version
         deployment_history = config.values.get('KUBERNETES_DEPLOYMENTS_REVISION_HISTORY_LIMIT', settings.KUBERNETES_DEPLOYMENTS_REVISION_HISTORY_LIMIT)  # noqa
 
@@ -1085,6 +1088,7 @@ class App(UuidAuditedModel):
             'routable': routable,
             'deploy_batches': batches,
             'deploy_timeout': deploy_timeout,
+            'deploy_insufficient_resource_wait': deploy_insufficient_resource_wait,
             'deployment_revision_history_limit': deployment_history,
             'release_summary': release.summary,
             'pod_termination_grace_period_seconds': pod_termination_grace_period_seconds,

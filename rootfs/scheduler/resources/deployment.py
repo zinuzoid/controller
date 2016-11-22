@@ -327,6 +327,7 @@ class Deployment(Resource):
         current = int(kwargs.get('previous_replicas', 0))
         batches = kwargs.get('deploy_batches', None)
         timeout = kwargs.get('deploy_timeout', 120)
+        insufficient_resource_wait = kwargs.get('deploy_insufficient_resource_wait', 0)
         tags = kwargs.get('tags', {})
         steps = self._get_deploy_steps(batches, tags)
         batches = self._get_deploy_batches(steps, replicas)
@@ -360,7 +361,8 @@ class Deployment(Resource):
             # check every 10 seconds for pod failures.
             # Depend on Deployment checks for ready pods
             if waited > 0 and (waited % 10) == 0:
-                additional_timeout = self.pod._handle_pending_pods(namespace, labels)
+                additional_timeout = self.pod._handle_pending_pods(
+                    namespace, labels, insufficient_resource_wait)
                 if additional_timeout:
                     timeout += additional_timeout
                     # add 10 minutes to timeout to allow a pull image operation to finish
