@@ -513,7 +513,7 @@ class Pod(Resource):
             # Not including this one for now as the message is not useful
             # "BackOff": "BackOffPullImage",
             # FailedScheduling relates limits
-            "FailedScheduling": "FailedScheduling",
+            # "FailedScheduling": "FailedScheduling",
         }
 
         # Nicer error than from the event
