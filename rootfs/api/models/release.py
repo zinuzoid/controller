@@ -1,4 +1,5 @@
 import logging
+import newrelic
 
 from django.conf import settings
 from django.db import models
@@ -481,5 +482,13 @@ class Release(UuidAuditedModel):
                 else:
                     # There were no changes to this release
                     raise AlreadyExists("{} changed nothing - release stopped".format(self.owner))
+
+        try:
+            newrelic.Newrelic.create_deploy(
+                self.config.values.get('DEIS_NEWRELIC_DEPLOY_APPLICATION_ID', None),
+                str(self.owner),
+                self.summary)
+        except Exception as e:
+            self.app.log(e)
 
         super(Release, self).save(*args, **kwargs)

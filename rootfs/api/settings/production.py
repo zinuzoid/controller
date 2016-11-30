@@ -230,6 +230,10 @@ LOGGING = {
             'handlers': ['console'],
             'propagate': True,
         },
+        'newrelic': {
+            'handlers': ['console'],
+            'propagate': True,
+        },
     }
 }
 TEST_RUNNER = 'api.tests.SilentDjangoTestSuiteRunner'
@@ -296,6 +300,10 @@ DEIS_DEPLOY_BATCHES = int(os.environ.get('DEIS_DEPLOY_BATCHES', 0))
 # For Kubernetes Deployments it is part of the global timeout
 # where it roughly goes BATCHES * TIMEOUT = global timeout
 DEIS_DEPLOY_TIMEOUT = int(os.environ.get('DEIS_DEPLOY_TIMEOUT', 120))
+
+# For newrelic deploy hook
+DEIS_NEWRELIC_CREATE_DEPLOY_URL = os.environ.get('DEIS_NEWRELIC_CREATE_DEPLOY_URL', 'https://api.newrelic.com/v2/applications/{application_id}/deployments.json')  # noqa
+DEIS_NEWRELIC_CREATE_DEPLOY_API_KEY = os.environ.get('DEIS_NEWRELIC_CREATE_DEPLOY_API_KEY')
 
 try:
     DEIS_DEPLOY_HOOK_URLS = os.environ['DEIS_DEPLOY_HOOK_URLS'].split(',')
