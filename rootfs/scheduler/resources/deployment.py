@@ -3,6 +3,7 @@ import json
 import time
 from scheduler.resources import Resource
 from scheduler.exceptions import KubeException, KubeHTTPException
+from django.conf import settings
 
 
 class Deployment(Resource):
@@ -106,7 +107,18 @@ class Deployment(Resource):
 
         return manifest
 
+    def _get_default_tags(self):
+        node_selector = settings.DEIS_DEFAULT_NODE_SELECTOR
+        if node_selector:
+            split = node_selector.split('=')
+            return {split[0]: split[1]}
+        return {}
+
     def create(self, namespace, name, image, entrypoint, command, **kwargs):
+        tags = kwargs.get('tags', {})
+        if not tags:
+            kwargs['tags'] = self._get_default_tags()
+
         manifest = self.manifest(namespace, name, image,
                                  entrypoint, command, **kwargs)
 
@@ -125,6 +137,10 @@ class Deployment(Resource):
         return response
 
     def update(self, namespace, name, image, entrypoint, command, **kwargs):
+        tags = kwargs.get('tags', {})
+        if not tags:
+            kwargs['tags'] = self._get_default_tags()
+
         manifest = self.manifest(namespace, name, image,
                                  entrypoint, command, **kwargs)
 
