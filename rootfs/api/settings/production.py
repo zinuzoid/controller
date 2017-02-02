@@ -305,6 +305,8 @@ DEIS_DEPLOY_TIMEOUT = int(os.environ.get('DEIS_DEPLOY_TIMEOUT', 120))
 DEIS_NEWRELIC_CREATE_DEPLOY_URL = os.environ.get('DEIS_NEWRELIC_CREATE_DEPLOY_URL', 'https://api.newrelic.com/v2/applications/{application_id}/deployments.json')  # noqa
 DEIS_NEWRELIC_CREATE_DEPLOY_API_KEY = os.environ.get('DEIS_NEWRELIC_CREATE_DEPLOY_API_KEY')
 
+DEIS_DEFAULT_NODE_SELECTOR = os.environ.get('DEIS_DEFAULT_NODE_SELECTOR')
+
 try:
     DEIS_DEPLOY_HOOK_URLS = os.environ['DEIS_DEPLOY_HOOK_URLS'].split(',')
 except KeyError:
